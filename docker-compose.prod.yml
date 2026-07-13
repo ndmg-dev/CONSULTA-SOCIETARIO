@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      # No Coolify, você pode injetar essas variáveis pela UI se quiser,
+      # mas deixaremos hardcoded como você pediu.
+      POSTGRES_DB: consulta_societario
+      POSTGRES_USER: mguser
+      POSTGRES_PASSWORD: mgpass2024
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mguser -d consulta_societario"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    restart: always
+    environment:
+      DATABASE_URL: postgresql+asyncpg://mguser:mgpass2024@db:5432/consulta_societario
+      DATABASE_URL_SYNC: postgresql://mguser:mgpass2024@db:5432/consulta_societario
+      CNPJ_API_BASE_URL: https://brasilapi.com.br/api/cnpj/v1
+      MAX_RECURSION_DEPTH: "3"
+      CACHE_TTL_HOURS: "24"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    restart: always
+    # Coolify proxy vai bater nesta porta 80 automaticamente
+    ports:
+      - "80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
