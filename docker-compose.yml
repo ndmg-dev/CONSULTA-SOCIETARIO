@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: consulta_societario
+      POSTGRES_USER: mguser
+      POSTGRES_PASSWORD: mgpass2024
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mguser -d consulta_societario"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://mguser:mgpass2024@db:5432/consulta_societario
+      DATABASE_URL_SYNC: postgresql://mguser:mgpass2024@db:5432/consulta_societario
+      CNPJ_API_BASE_URL: https://brasilapi.com.br/api/cnpj/v1
+      MAX_RECURSION_DEPTH: "3"
+      CACHE_TTL_HOURS: "24"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://backend:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+volumes:
+  pgdata:
