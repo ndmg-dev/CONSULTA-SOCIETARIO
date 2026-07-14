@@ -8,6 +8,8 @@ services:
       POSTGRES_DB: consulta_societario
       POSTGRES_USER: mguser
       POSTGRES_PASSWORD: mgpass2024
+    ports:
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
