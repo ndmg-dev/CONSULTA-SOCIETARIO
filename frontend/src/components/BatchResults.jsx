@@ -128,7 +128,7 @@ export default function BatchResults({ cnpjs, invalidInputs, onBack }) {
       if (r.invalid) {
         return [r.cnpj, 'Inválido', 'NÃO', '-', '-', '-', '-']
       }
-      const sociosStr = r.socios.join('; ')
+      const sociosStr = r.socios.join('\n')
       return [
         formatCnpj(r.cnpj),
         r.status,
@@ -136,7 +136,7 @@ export default function BatchResults({ cnpjs, invalidInputs, onBack }) {
         r.razao_social,
         r.situacao,
         new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(r.capital || 0),
-        sociosStr ? (sociosStr.length > 50 ? sociosStr.substring(0, 47) + '...' : sociosStr) : '-'
+        sociosStr || '-'
       ]
     })
     
