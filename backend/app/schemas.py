@@ -19,6 +19,17 @@ class Partner(BaseModel):
     qual_rep_legal: str | None = None
     faixa_etaria: str | None = None
     cnpj_cpf_do_socio: str | None = None
+    cnpj_completo: str | None = Field(
+        default=None,
+        description="Full 14-digit CNPJ for PJ partners (matriz /0001), "
+        "reconstructed from the 8-digit root returned by BrasilAPI",
+    )
+    cpf_mascarado: bool = Field(
+        default=False,
+        description="True when the partner document is a Receita-masked CPF "
+        "(e.g. ***298554**) and cannot be fully retrieved",
+    )
+    identificador_de_socio: int | None = None
     tipo: str = Field(
         default="PF",
         description="Computed partner type: 'PF', 'PJ', or 'Estrangeiro'",
