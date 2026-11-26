@@ -2,11 +2,18 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import PartnerTypeBadge from './PartnerTypeBadge'
 import EmptyState from './EmptyState'
+import { formatCnpj, completeCnpjBase } from '../utils/cnpj'
 
 function getPartnerType(partner) {
   const cpfCnpj = partner.cnpj_cpf_do_socio || partner.cnpj_cpf || ''
   const cleaned = cpfCnpj.replace(/\D/g, '')
-  if (partner.tipo === 'PJ' || partner.tipo === 'Pessoa Jurídica' || cleaned.length === 14) {
+  if (
+    partner.tipo === 'PJ' ||
+    partner.tipo === 'Pessoa Jurídica' ||
+    partner.identificador_de_socio === 1 ||
+    cleaned.length === 14 ||
+    cleaned.length === 8
+  ) {
     return 'PJ'
   }
   if (partner.tipo === 'Estrangeiro' || partner.identificador_de_socio === 3) {
@@ -16,8 +23,27 @@ function getPartnerType(partner) {
 }
 
 function getPartnerCnpj(partner) {
-  const cpfCnpj = partner.cnpj_cpf_do_socio || partner.cnpj_cpf || ''
-  return cpfCnpj.replace(/\D/g, '')
+  // Backend provides the full CNPJ in cnpj_completo; otherwise rebuild it
+  // from the 8-digit root returned by BrasilAPI.
+  if (partner.cnpj_completo) {
+    return partner.cnpj_completo.replace(/\D/g, '')
+  }
+  const raw = (partner.cnpj_cpf_do_socio || partner.cnpj_cpf || '').replace(/\D/g, '')
+  if (raw.length === 14) return raw
+  if (raw.length === 8) return completeCnpjBase(raw) || ''
+  return raw
+}
+
+function getPartnerDocLabel(partner, type) {
+  if (type === 'PJ') {
+    const cnpj = getPartnerCnpj(partner)
+    return cnpj ? `CNPJ ${formatCnpj(cnpj)}` : null
+  }
+  // PF / Estrangeiro: the Receita masks the CPF, so only a partial is available.
+  const raw = partner.cnpj_cpf_do_socio || partner.cnpj_cpf || ''
+  if (!raw) return null
+  const masked = partner.cpf_mascarado || raw.includes('*')
+  return masked ? `CPF ${raw} (parcial — limitação da Receita)` : `CPF ${raw}`
 }
 
 export default function PartnerTable({ partners = [], onPartnerClick }) {
@@ -57,6 +83,7 @@ export default function PartnerTable({ partners = [], onPartnerClick }) {
             const type = getPartnerType(partner)
             const isPJ = type === 'PJ'
             const cnpj = isPJ ? getPartnerCnpj(partner) : null
+            const docLabel = getPartnerDocLabel(partner, type)
 
             return (
               <tr
@@ -72,13 +99,14 @@ export default function PartnerTable({ partners = [], onPartnerClick }) {
                         handlePjClick(cnpj)
                       }}
                       href={`/resultado/${cnpj}`}
-                      title={`Consultar ${cnpj}`}
+                      title={`Consultar ${formatCnpj(cnpj)}`}
                     >
                       {partner.nome_socio || partner.nome || '—'}
                     </a>
                   ) : (
                     partner.nome_socio || partner.nome || '—'
                   )}
+                  {docLabel && <div className="partner-doc">{docLabel}</div>}
                 </td>
                 <td>
                   <PartnerTypeBadge tipo={type} cnpj={cnpj} />

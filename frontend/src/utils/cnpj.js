@@ -77,3 +77,36 @@ export function isCnpj(value) {
   const digits = cleanCnpj(value)
   return digits.length === 14
 }
+
+/**
+ * Compute the two CNPJ check digits for a 12-digit base.
+ * @param {string} base12
+ * @returns {string} two-digit string
+ */
+function cnpjCheckDigits(base12) {
+  const calc = (nums) => {
+    let sum = 0
+    for (let i = 0; i < nums.length; i++) {
+      const weight = ((nums.length - 1 - i) % 8) + 2
+      sum += Number(nums[i]) * weight
+    }
+    const remainder = sum % 11
+    return remainder < 2 ? '0' : String(11 - remainder)
+  }
+  const d1 = calc(base12)
+  const d2 = calc(base12 + d1)
+  return d1 + d2
+}
+
+/**
+ * Complete an 8-digit CNPJ root into the full matriz CNPJ (/0001 + check digits).
+ * BrasilAPI returns only the root for PJ partners.
+ * @param {string} base - 8-digit root (may contain non-digits)
+ * @returns {string|null} 14-digit CNPJ, or null if base is not 8 digits
+ */
+export function completeCnpjBase(base) {
+  const digits = cleanCnpj(base)
+  if (digits.length !== 8) return null
+  const base12 = `${digits}0001`
+  return base12 + cnpjCheckDigits(base12)
+}

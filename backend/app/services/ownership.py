@@ -94,8 +94,12 @@ class OwnershipService:
         children: list[OwnershipNode] = []
         for partner in company.qsa:
             if partner.tipo == "PJ" and depth < self.max_depth:
-                partner_cnpj = re.sub(r"\D", "", partner.cnpj_cpf_do_socio or "")
-                if partner_cnpj:
+                # Prefer the reconstructed full CNPJ; BrasilAPI only gives an
+                # 8-digit root in cnpj_cpf_do_socio which cannot be resolved.
+                partner_cnpj = re.sub(
+                    r"\D", "", partner.cnpj_completo or partner.cnpj_cpf_do_socio or ""
+                )
+                if len(partner_cnpj) == 14:
                     child = await self._resolve_node(
                         cnpj=partner_cnpj,
                         depth=depth + 1,

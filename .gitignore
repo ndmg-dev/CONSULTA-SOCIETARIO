@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Node
+node_modules/
+
+# Local docker overrides (não versionar)
+docker-compose.override.yml
+
+# Env
+.env
+.env.*
